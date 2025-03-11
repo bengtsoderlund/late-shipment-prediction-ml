@@ -1,6 +1,6 @@
 # Predicting Late Shipments: A Machine Learning Approach
 
-In this project, I use machine learning to develop two predictive models for a global sports and outdoor equipment retailer to proactively identify high-risk shipments before delays occur. The data, which is publicly available, is provided by DataCo and contains detailed order and shipping information. Using this data, I train two Random Forest machine learning classifiers:
+This project applies machine learning to predict late shipments for a global sports and outdoor equipment retailer. Using Python, I developed two predictive models to identify high-risk shipments before delays occur. The data, which is publicly available, is provided by DataCo and contains detailed order and shipping information. Using this data, I train two Random Forest machine learning classifiers:
 
 1. Late Order Model (Optimized for Accuracy) – Predicts whether an order will be late by at least 1 day.
 2. Very Late Order Model (Optimized for Recall) – Predicts if an order will be late by at least 3 days.
