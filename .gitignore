@@ -1,1 +1,30 @@
-notebooks/.ipynb_checkpoints/
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local datasets (keep folder structure)
+data/preprocessed/*
+!data/preprocessed/.gitkeep
+
+data/unprocessed/*
+!data/unprocessed/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# MLflow experiment tracking
+mlruns/*
+!mlruns/.gitkeep
+
+# Trained models and artifacts
+models/*
+!models/.gitkeep
+
+# OS-specific junk files
+.DS_Store
+Thumbs.db

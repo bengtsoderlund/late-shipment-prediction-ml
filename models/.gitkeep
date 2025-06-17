@@ -1,0 +1,2 @@
+# This folder is reserved for trained models and artifacts generated during the pipeline.
+# All contents are excluded from version control via .gitignore.
