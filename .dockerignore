@@ -11,6 +11,7 @@ mlruns/
 notebooks/
 tuning/
 __pycache__/
+.ipynb_checkpoints/
 
 # Documentation
 README.md
