@@ -1,3 +1,10 @@
+"""
+landing.py
+
+Defines the root endpoint (`/`) that serves an HTML landing page 
+explaining the purpose of the API and how to use it.
+"""
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 

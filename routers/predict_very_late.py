@@ -42,7 +42,7 @@ router = APIRouter()
 async def predict_very_late(shipment_features: ShipmentFeatures):
     logger.info("Received request to /predict_very_late endpoint")
 
-    data_dict = shipment_features.dict()
+    data_dict = shipment_features.model_dump()
     logger.debug(f"Raw input data: {data_dict}")
     X_unprocessed = pd.DataFrame([data_dict])
     logger.debug(f"DataFrame constructed: {X_unprocessed}")
