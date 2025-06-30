@@ -66,7 +66,7 @@ def train_very_late_model(X_train, y_train, X_test, y_test, model_file):
             n_estimators=433
         )
 
-        logger.info("⚙️ Training Random Forest model with best parameters...")
+        logger.info("Training Random Forest model with best parameters...")
         rf.fit(X_train, y_train)
         
         # ─────────────────────────────────────────────
@@ -84,15 +84,15 @@ def train_very_late_model(X_train, y_train, X_test, y_test, model_file):
         train_recall = recall_score(y_train, y_train_pred)
         test_recall = recall_score(y_test, y_test_pred)
         
-        logger.info(f"🎯 Training Recall: {train_recall:.4f}")
-        logger.info(f"🎯 Test Recall:     {test_recall:.4f}")
-        logger.debug("📋 Classification Report (test set):\n" + classification_report(y_test, y_test_pred))
+        logger.info(f"Training Recall: {train_recall:.4f}")
+        logger.info(f"Test Recall:     {test_recall:.4f}")
+        logger.debug("Classification Report (test set):\n" + classification_report(y_test, y_test_pred))
         
         cm = confusion_matrix(y_test, y_test_pred)
-        logger.debug(f"\n🧾 Confusion Matrix (test set):\n{cm}")
+        logger.debug(f"\n Confusion Matrix (test set):\n{cm}")
         
         avg_precision = average_precision_score(y_test, y_test_prob)
-        logger.info(f"📉 Threshold used: {threshold} | 📈 Avg Precision: {avg_precision:.4f}")
+        logger.info(f" Threshold used: {threshold} | Avg Precision: {avg_precision:.4f}")
 
         # ─────────────────────────────────────────────
         # Save model to specified path
@@ -100,7 +100,7 @@ def train_very_late_model(X_train, y_train, X_test, y_test, model_file):
         model_file = Path(model_file)
         model_file.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(rf, model_file)
-        logger.info(f"💾 Model saved to: {model_file}")
+        logger.info(f"Model saved to: {model_file}")
 
         # ─────────────────────────────────────────────
         # Log top 10 feature importances
@@ -109,12 +109,12 @@ def train_very_late_model(X_train, y_train, X_test, y_test, model_file):
         feature_names = X_train.columns
         sorted_features = sorted(zip(feature_names, importances), key=lambda x: x[1], reverse=True)
 
-        logger.info("🔍 Top 10 Feature Importances:")
+        logger.info("Top 10 Feature Importances:")
         for feature, importance in sorted_features[:10]:
             logger.info(f"{feature}: {importance:.4f}")
 
-        logger.info("✅ Very late model training completed successfully.\n")
+        logger.info("Very late model training completed successfully.\n")
         
     except Exception as e:
-        logger.error(f"💥 Failed to train very late shipment model: {e}", exc_info=True)
+        logger.error(f"Failed to train very late shipment model: {e}", exc_info=True)
         raise

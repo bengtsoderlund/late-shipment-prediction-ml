@@ -49,10 +49,10 @@ def clean_raw_data(df):
         logger.debug("Filtering to only complete or closed orders...")
         df = df[df['order_status'].isin(['COMPLETE', 'CLOSED'])]
         
-        logger.info("✅ Raw data cleaned successfully")
+        logger.info("Raw data cleaned successfully")
         return df
     
     
     except Exception as e:
-        logger.error(f"💥 Failed to clean raw data: {e}", exc_info=True)
+        logger.error(f"Failed to clean raw data: {e}", exc_info=True)
         raise

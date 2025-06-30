@@ -109,7 +109,7 @@ def run_tuning(X_train, y_train, X_test, y_test):
     mlflow.set_tracking_uri(f"file:///{mlruns_path}")
     mlflow.set_experiment(experiment_name)
     with mlflow.start_run(run_name=run_name):
-        logger.info(f"🚀 Starting run: {run_name}")
+        logger.info(f"Starting run: {run_name}")
 
         
         # ─────────────────────────────────────────────
@@ -172,17 +172,17 @@ def run_tuning(X_train, y_train, X_test, y_test):
         mlflow.log_metric("train_f1", train_f1)
         mlflow.log_metric("test_f1", test_f1)
         
-        logger.info("\n📈 Model performance")
+        logger.info("\n Model performance")
         logger.info(f"Training Recall: {train_recall}")
         logger.info(f"Test Recall: {test_recall}")
-        logger.info(f"\n🏆 Best Parameters: \n{best_params}")
+        logger.info(f"\n Best Parameters: \n{best_params}")
         
         # ─────────────────────────────────────────────
         # Step 4.4: Log the Final Model to MLflow
         # ─────────────────────────────────────────────
         logger.debug("Saving model artifact to MLflow...")
         mlflow.sklearn.log_model(best_rf, run_name)
-        logger.info("📦 Model logged to MLflow.")
+        logger.info("Model logged to MLflow.")
 
 
 # ─────────────────────────────────────────────
@@ -196,7 +196,7 @@ def main():
     Then fits and logs a tuned Random Forest model using MLflow.
     """
     
-    logger.info("🛠️ Tuning Very Late Random Forest model with best parameters...")
+    logger.info("Tuning Very Late Random Forest model with best parameters...")
 
     try:
         # ─────────────────────────────────────────────
@@ -214,7 +214,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 5.2: Preprocess Data if Files Are Missing
         # ─────────────────────────────────────────────
-        logger.debug("⚠️ Preprocessed data not found. Re-running preprocessing steps...")
+        logger.debug("Preprocessed data not found. Re-running preprocessing steps...")
         from src.load_data import load_raw_data
         from src.clean_data import clean_raw_data
         from src.feature_engineering import engineer_features

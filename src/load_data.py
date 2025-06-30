@@ -31,13 +31,13 @@ def load_raw_data(filepath):
         Exception: If the file cannot be read.
     """
     
-    logger.info(f"📂 Loading data from: {filepath}")
+    logger.info(f"Loading data from: {filepath}")
 
     try:
         df = pd.read_csv(filepath, encoding="latin1")
-        logger.info("✅ Raw data successfully loaded")
+        logger.info("Raw data successfully loaded")
         return df
     
     except Exception as e:
-        logger.error(f"💥 Failed to load raw data: {e}", exc_info=True)
+        logger.error(f"Failed to load raw data: {e}", exc_info=True)
         raise

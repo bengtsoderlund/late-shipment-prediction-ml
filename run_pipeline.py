@@ -44,13 +44,13 @@ def main():
     """
     
     start = time.time()
-    logger.info("🚀 Starting pipeline...\n")
+    logger.info("Starting pipeline...\n")
     
     try:
         # ─────────────────────────────────────────────
         # Step 1: Load raw data
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 1: Load raw data")
+        logger.info("- Step 1: Load raw data")
         df = load_raw_data(raw_data_file)
         
         logger.debug(f"Data shape: {df.shape}")
@@ -59,7 +59,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 2: Clean raw data
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 2: Clean raw data")
+        logger.info("- Step 2: Clean raw data")
         df = clean_raw_data(df)
         logger.debug(f"Cleaned data shape: {df.shape}")
         logger.debug(f"Preview:\n{df.head()}")
@@ -67,7 +67,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 3: Feature engineering
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 3: Feature engineering")
+        logger.info("- Step 3: Feature engineering")
         df = engineer_features(df)
         logger.debug(f"Engineered data shape: {df.shape}")
         logger.debug(f"Preview:\n{df.head()}")
@@ -75,7 +75,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 4: Preprocess features
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 4: Preprocess features")
+        logger.info("- Step 4: Preprocess features")
         processed_data = preprocess_features(
             df, 
             save_to_disk=True,
@@ -89,7 +89,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 5: Train late model
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 5: Train late model")
+        logger.info("- Step 5: Train late model")
         train_late_model(
             X_train=processed_data["X_train"],
             y_train=processed_data["y_late_train"],
@@ -101,7 +101,7 @@ def main():
         # ─────────────────────────────────────────────
         # Step 6: Train very late model
         # ─────────────────────────────────────────────
-        logger.info("🔹 Step 6: Train very late model")
+        logger.info("- Step 6: Train very late model")
         train_very_late_model(
             X_train=processed_data["X_train"],
             y_train=processed_data["y_very_late_train"],
@@ -114,12 +114,12 @@ def main():
         minutes = int(duration // 60)
         seconds = duration % 60
         if minutes:
-            logger.info(f"\n🏁 Pipeline completed in {minutes} min {seconds:.2f} sec")
+            logger.info(f"\n Pipeline completed in {minutes} min {seconds:.2f} sec")
         else:
-            logger.info(f"\n🏁 Pipeline completed in {seconds:.2f} seconds")
+            logger.info(f"\n Pipeline completed in {seconds:.2f} seconds")
         
     except Exception as e:
-        logger.error(f"💥 Pipeline failed: {e}", exc_info=True)
+        logger.error(f"Pipeline failed: {e}", exc_info=True)
 
 if __name__ == "__main__":
     main()

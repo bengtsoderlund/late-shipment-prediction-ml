@@ -63,9 +63,9 @@ def engineer_features(df):
         df['minute'] = df['order_date_dateorders'].dt.minute
         df['day_of_week'] = df['order_date_dateorders'].dt.weekday
         
-        logger.info("✅ Feature engineering completed successfully")
+        logger.info("Feature engineering completed successfully")
         return df
         
     except Exception as e:
-        logger.error(f"💥 Failed to engineer features: {e}", exc_info=True)
+        logger.error(f"Failed to engineer features: {e}", exc_info=True)
         raise

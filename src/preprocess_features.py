@@ -110,7 +110,7 @@ def preprocess_features(
         # Step 3: Save unprocessed datasets (optional)
         # ─────────────────────────────────────────────
         if save_to_disk:
-            logger.info(f"💾 Saving unprocessed data to: {unprocessed_path}")
+            logger.info(f"Saving unprocessed data to: {unprocessed_path}")
             logger.debug(("Purpose: to provide a clean, pre-feature-engineered baseline for schema definition, "
                           "API input validation, and reproducibility."))
             
@@ -208,7 +208,7 @@ def preprocess_features(
         # Step 10: Save preprocessed datasets (optional)
         # ─────────────────────────────────────────────
         if save_to_disk:
-            logger.info(f"💾 Saving preprocessed data to: {preprocessed_path}")
+            logger.info(f"Saving preprocessed data to: {preprocessed_path}")
             logger.debug("Purpose: to enable reuse during model tuning or evaluation without rerunning preprocessing.")
             
             preprocessed_path.mkdir(parents=True, exist_ok=True)
@@ -222,7 +222,7 @@ def preprocess_features(
         # ─────────────────────────────────────────────
         # Step 11: Final logging and return
         # ─────────────────────────────────────────────
-        logger.info("✅ Preprocessing completed successfully")
+        logger.info("Preprocessing completed successfully")
         
         
         return {
@@ -235,7 +235,7 @@ def preprocess_features(
         }
     
     except Exception as e:
-        logger.error(f"💥 Failed to preprocess features: {e}", exc_info=True)
+        logger.error(f"Failed to preprocess features: {e}", exc_info=True)
         raise
     
 
