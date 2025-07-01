@@ -59,6 +59,7 @@ The late model provides broad classification coverage of delayed shipments, whil
 
 The repository follows a modular, production-ready structure designed for clarity, reproducibility, and scalability. Key components include data preprocessing scripts, model training modules, a containerized FastAPI application, and automated tests. Below is an overview of the file and folder organization:
 
+```text
 late-shipment-predictions-ml/
 │
 ├── api/                     # FastAPI application and endpoint logic
@@ -122,6 +123,7 @@ late-shipment-predictions-ml/
 ├── requirements.txt         # List of dependencies
 ├── Dockerfile               # Used to containerize and deploy the FastAPI app
 └── README.md
+```
 
 ## Installation and Running the Pipeline
 
@@ -208,6 +210,7 @@ To try out the deployed FastAPI app on Render:
   "order_region": "Central America",
   "order_state": "México"
 }
+```
 
 5. Click **"Execute"**.
 
