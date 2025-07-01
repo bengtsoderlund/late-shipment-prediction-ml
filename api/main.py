@@ -16,7 +16,7 @@ Note:
 
 import os
 from fastapi import FastAPI
-from routers import landing, ping, predict_very_late
+from routers import landing, ping, predict_late, predict_very_late
 
 # Create FastAPI app with metadata
 app = FastAPI(
