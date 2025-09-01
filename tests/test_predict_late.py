@@ -1,7 +1,7 @@
 """
-tests/test_predict_very_late.py
+tests/test_predict_late.py
 
-Integration test for the /predict_very_late/ endpoint.
+Integration test for the /predict_late/ endpoint.
 """
 
 from fastapi.testclient import TestClient
@@ -9,7 +9,7 @@ from api.main import app
 
 client = TestClient(app)
 
-def test_very_late():
+def test_late():
     input_data = {
         "order_item_quantity": 3,
         "order_item_total": 136.44,
@@ -35,10 +35,10 @@ def test_very_late():
         "order_state": "Australia del Sur"
     }
     
-    response = client.post("/predict_very_late/", json=input_data)
+    response = client.post("/predict_late/", json=input_data)
     
     assert response.status_code == 200
     result = response.json()
-    assert "very_late_prediction" in result
-    assert isinstance(result["very_late_prediction"], int)
-    assert result["very_late_prediction"] in (0, 1)
+    assert "late_prediction" in result
+    assert isinstance(result["late_prediction"], int)
+    assert result["late_prediction"] in (0, 1)

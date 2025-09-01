@@ -27,7 +27,5 @@ app = FastAPI(
 # Register available routes
 app.include_router(landing.router)              # Root landing page
 app.include_router(ping.router)                 # Health check endpoint
+app.include_router(predict_late.router)         # Late prediction (1+ day delay)
 app.include_router(predict_very_late.router)    # Very late prediction (3+ day delay)
-
-# Optional: Enable this route for local use only (commented out due to deployment limits)
-# app.include_router(predict_late.router)       # Late prediction (1+ day delay)
