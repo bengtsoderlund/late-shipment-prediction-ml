@@ -68,7 +68,15 @@ late-shipment-predictions-ml/
 │
 ├── api/                     # FastAPI application and endpoint logic
 │   ├── main.py
-│   ├── shipment_schema.py
+│   └── shipment_schema.py
+│
+├── assets/                 # Proof artifacts (screenshots) showing live deployment
+│   ├── cloudwatch_startup.png
+│   ├── swagger_docs.png
+│   ├── swagger_landing.png
+│   ├── swagger_ping.png
+│   ├── swagger_predict_late.png
+│   └── swagger_predict_very_late.png
 │
 ├── data/                            # Data storage directory
 │   ├── raw/                         # Contains raw shipment data (included)
@@ -86,7 +94,7 @@ late-shipment-predictions-ml/
 │       └── variable_description.csv # Column descriptions and definitions
 │
 ├── infra/                  # Infrastructure blueprints for AWS ECS/Fargate deployment
-│   ├── iam_policy.json        # IAM policy allowing the ECS task role to list and read objects from the S3 bucket `late-shipment-artifacts-bengt`
+│   ├── iam_policy.json        # IAM policy allowing the ECS task role to list and read objects from the S3 bucket `late-shipments-artifacts-bengt`
 │   └── task_def.json          # ECS Task Definition (family: late-shipment-api) specifying container image, roles, ports (8000), logging, CPU/memory, and Fargate runtime platform
 │
 ├── logs/
@@ -168,7 +176,7 @@ These models are used by the FastAPI app for inference via the /predict_very_lat
 
 This project includes a deployable **REST API** built with **FastAPI**, allowing users to interact with a trained machine learning model via HTTP requests.
 
-Key deployment features:
+### Key deployment features
 - **Containerized with Docker** and stored in **Amazon ECR**
 - Deployed on **Amazon ECS Fargate** (serverless container service) within a managed cluster
 - **Models and preprocessing artifacts** are loaded securely from **Amazon S3**
@@ -178,17 +186,84 @@ Key deployment features:
 - A **/ping** route is included for uptime and health monitoring
 - **Logs** from the service are streamed to **Amazon CloudWatch** for observability
 
+### Cloud Architecture (high level)
+
+The client (Swagger/Postman) calls a FastAPI container on ECS Fargate.  
+At startup the app loads **preprocessing artifacts and models** from Amazon S3.  
+Runtime logs go to CloudWatch.
+
+```mermaid
+flowchart LR
+  Client[Client (Swagger/Postman)] -->|HTTP| ECS[Fargate Service (FastAPI)]
+  ECS -->|Load preprocessing + models| S3[(Amazon S3)]
+  ECS -->|Logs| CW[CloudWatch Logs]
+```
+
+### Deployment Steps (AWS ECS Fargate)
+
+To reproduce this deployment yourself:
+
+1. **Build and tag the Docker image**
+
+   ```powershell
+   $ACCOUNT_ID = "<your_aws_account_id>"
+   $REGION     = "<aws_region>"   # e.g., eu-north-1
+   $REPO       = "<your_repo_name>"   # e.g., late-shipment-api
+   $REPO_URI   = "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO"
+   $TAG        = (Get-Date -Format "yyyy-MM-dd-HHmm")
+
+   docker build -t "${REPO}:${TAG}" .
+   docker tag "${REPO}:${TAG}" "${REPO_URI}:${TAG}"
+   docker push "${REPO_URI}:${TAG}"
+ ```
+
+2. **Update ECS service**
+- Go to the ECS console → select your service → Update
+- Paste the new image URI, for example:
+  <account_id>.dkr.ecr.<region>.amazonaws.com/<repo_name>:<tag>
+- Check Force new deployment and confirm.
+
+3. **Verify logs in CloudWatch**
+- Look for startup logs showing that the scaler, encoders, and models are loaded from S3.
+
+4. **Test the API**
+- Open `http://<public_ip>:8000/docs` in a browser.
+- Try `/ping` (should return `200`).
+- Try `/predict_late/` with the sample JSON provided below.
+
+### Proof of Deployment
+
+Below are screenshots confirming the service is deployed, responding to requests, and serving predictions.
+
+- **Startup logs in CloudWatch** showing that all artifacts (scaler, encoders, models) were loaded from S3  
+  ![CloudWatch Logs](assets/cloudwatch_startup.png)
+
+- **Landing page** served by FastAPI  
+  ![Swagger Landing](assets/swagger_landing.png)
+
+- **Ping endpoint** responding successfully (`{"status":"ok"}`)  
+  ![Swagger Ping](assets/swagger_ping.png)
+
+- **Interactive API docs** available via Swagger UI  
+  ![Swagger Docs](assets/swagger_docs.png)
+
+- **Prediction endpoint** returning a valid response (`late_prediction: 1`)  
+  ![Swagger Predict Late](assets/swagger_predict_late.png)
+
+- **Very Late prediction endpoint** returning a valid response (`very_late_prediction: 0/1`)  
+  ![Swagger Predict Very Late](assets/swagger_predict_very_late.png)
+
+
 ## Using the Deployed API
+
+**Note:** The live service is currently paused (scaled to 0 on AWS ECS Fargate) to avoid unnecessary costs.  
+You can still reproduce the deployment by following the steps in this repository.  
+A stable public endpoint will be provided in **January 2026**.
 
 To try out the deployed FastAPI app on AWS:
 
 1. Open the Swagger UI in your browser at the service’s public IP:
    `http://<PUBLIC_IP>:8000/docs`
-
-   *Note: This API is deployed on AWS ECS Fargate with a public IP address.  
-   To avoid unnecessary costs, the live service may be paused.  
-   A stable URL will be provided in January 2026.  
-   In the meantime, the service can be reproduced by following the deployment steps in this repository.*
 
 2. Locate either the `/predict_late/` or `/predict_very_late/` endpoint.
 

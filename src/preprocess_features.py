@@ -25,7 +25,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler, OneHotEncoder, OrdinalEncoder
 from src.logger import get_logger
 
-
 logger = get_logger(__name__)
 
 
@@ -54,12 +53,12 @@ ALL_INPUT_FEATURES = NUMERICAL_FEATURES + ONEHOT_FEATURES + LABEL_FEATURES
 
 def preprocess_features(
         df, 
-        save_to_disk=False, 
-        unprocessed_path=None, 
-        preprocessed_path=None,
-        scaler_file=None,
-        onehot_encoder_file=None,
-        ordinal_encoder_file=None
+        save_to_disk, 
+        unprocessed_path, 
+        preprocessed_path,
+        scaler_file,
+        onehot_encoder_file,
+        ordinal_encoder_file
 ):
     """
     Preprocesses features for training ML models to predict both 'late' and 'very_late'.
@@ -152,9 +151,10 @@ def preprocess_features(
             index=X_test.index
         )
         
-        if save_to_disk:
+        if save_to_disk and scaler_file:
             scaler_file.parent.mkdir(parents=True, exist_ok=True)
             joblib.dump(scaler, scaler_file)
+            logger.info(f"Saved RobustScaler to: {scaler_file}")
 
         # ─────────────────────────────────────────────
         # Step 7: One-hot encode categorical features and save encoder
@@ -171,9 +171,10 @@ def preprocess_features(
             index=X_test.index
         )
 
-        if save_to_disk:
+        if save_to_disk and onehot_encoder_file:
             onehot_encoder_file.parent.mkdir(parents=True, exist_ok=True)
             joblib.dump(onehot_encoder, onehot_encoder_file)
+            logger.info(f"Saved OneHotEncoder to: {onehot_encoder_file}")
 
         # ─────────────────────────────────────────────
         # Step 8: Label encode high-cardinality features and save encoder
@@ -191,9 +192,10 @@ def preprocess_features(
             index=X_test.index
         )
         
-        if save_to_disk:
+        if save_to_disk and ordinal_encoder_file:
             ordinal_encoder_file.parent.mkdir(parents=True, exist_ok=True)
             joblib.dump(ordinal_encoder, ordinal_encoder_file)
+            logger.info(f"Saved OrdinalEncoder to: {ordinal_encoder_file}")
 
         # ─────────────────────────────────────────────
         # Step 9: Concatenate all processed features
@@ -224,7 +226,6 @@ def preprocess_features(
         # ─────────────────────────────────────────────
         logger.info("Preprocessing completed successfully")
         
-        
         return {
             "X_train": X_train_processed,
             "X_test": X_test_processed,
@@ -237,6 +238,3 @@ def preprocess_features(
     except Exception as e:
         logger.error(f"Failed to preprocess features: {e}", exc_info=True)
         raise
-    
-
-    

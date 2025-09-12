@@ -1,24 +1,51 @@
+# ─────────────────────────────
 # Version control
+# ─────────────────────────────
 .git/
 .gitignore
 
-# Local data and logs
+# ─────────────────────────────
+# OS/editor junk
+# ─────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+
+# ─────────────────────────────
+# Python environments & caches
+# ─────────────────────────────
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# ─────────────────────────────
+# Local data & experiment artifacts
+# ─────────────────────────────
 data/
 logs/
 mlruns/
 
-# Development-only scripts and temporary files
+# ─────────────────────────────
+# Notebooks & dev-only folders
+# ─────────────────────────────
 notebooks/
 tuning/
-__pycache__/
-.ipynb_checkpoints/
 
+# ─────────────────────────────
+# Infrastructure (not needed at runtime)
+# ─────────────────────────────
+infra/
+
+# ─────────────────────────────
+# Model artifacts (loaded from S3 at runtime)
+# ─────────────────────────────
+models/
+
+# ─────────────────────────────
 # Documentation
+# ─────────────────────────────
 README.md
-
-# Python bytecode
-*.pyc
-*.pyo
-
-# OS-specific
-Thumbs.db
