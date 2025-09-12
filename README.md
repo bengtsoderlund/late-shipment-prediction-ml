@@ -194,9 +194,9 @@ Runtime logs go to CloudWatch.
 
 ```mermaid
 flowchart LR
-  Client[Client (Swagger/Postman)] -->|HTTP| ECS[Fargate Service (FastAPI)]
-  ECS -->|Load preprocessing + models| S3[(Amazon S3)]
-  ECS -->|Logs| CW[CloudWatch Logs]
+  client[Client: Swagger or Postman] -->|HTTP| api[FastAPI on ECS Fargate]
+  api -->|Load artifacts & models| s3[(Amazon S3)]
+  api -->|Logs| cw[CloudWatch Logs]
 ```
 
 ### Deployment Steps (AWS ECS Fargate)
@@ -215,7 +215,7 @@ To reproduce this deployment yourself:
    docker build -t "${REPO}:${TAG}" .
    docker tag "${REPO}:${TAG}" "${REPO_URI}:${TAG}"
    docker push "${REPO_URI}:${TAG}"
- ```
+   ```
 
 2. **Update ECS service**
 - Go to the ECS console → select your service → Update
