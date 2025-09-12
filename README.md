@@ -235,22 +235,28 @@ To reproduce this deployment yourself:
 
 Below are screenshots confirming the service is deployed, responding to requests, and serving predictions.
 
-- **Startup logs in CloudWatch** showing that all artifacts (scaler, encoders, models) were loaded from S3  
+- **Startup logs in CloudWatch** showing that all artifacts (scaler, encoders, models) were loaded from S3
+ 
   ![CloudWatch Logs](assets/cloudwatch_startup.png)
 
-- **Landing page** served by FastAPI  
+- **Landing page** served by FastAPI
+
   ![Swagger Landing](assets/swagger_landing.png)
 
-- **Ping endpoint** responding successfully (`{"status":"ok"}`)  
+- **Ping endpoint** responding successfully (`{"status":"ok"}`)
+ 
   ![Swagger Ping](assets/swagger_ping.png)
 
-- **Interactive API docs** available via Swagger UI  
+- **Interactive API docs** available via Swagger UI
+
   ![Swagger Docs](assets/swagger_docs.png)
 
-- **Prediction endpoint** returning a valid response (`late_prediction: 1`)  
+- **Prediction endpoint** returning a valid response (`late_prediction: 1`)
+ 
   ![Swagger Predict Late](assets/swagger_predict_late.png)
 
-- **Very Late prediction endpoint** returning a valid response (`very_late_prediction: 0/1`)  
+- **Very Late prediction endpoint** returning a valid response (`very_late_prediction: 0/1`)
+
   ![Swagger Predict Very Late](assets/swagger_predict_very_late.png)
 
 
