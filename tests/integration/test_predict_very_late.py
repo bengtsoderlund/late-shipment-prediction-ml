@@ -1,15 +1,13 @@
 """
-tests/test_predict_late.py
+tests/integration/test_predict_very_late.py
 
-Integration test for the /predict_late/ endpoint.
+Integration test for the /predict_very_late endpoint using real S3-loaded artifacts.
 """
 
-from fastapi.testclient import TestClient
-from api.main import app
+import pytest
+pytestmark = pytest.mark.integration
 
-client = TestClient(app)
-
-def test_late():
+def test_very_late(client):
     input_data = {
         "order_item_quantity": 3,
         "order_item_total": 136.44,
@@ -35,10 +33,9 @@ def test_late():
         "order_state": "Australia del Sur"
     }
     
-    response = client.post("/predict_late/", json=input_data)
+    resp = client.post("/predict_very_late/", json=input_data)
     
-    assert response.status_code == 200
-    result = response.json()
-    assert "late_prediction" in result
-    assert isinstance(result["late_prediction"], int)
-    assert result["late_prediction"] in (0, 1)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "very_late_prediction" in body
+    assert body["very_late_prediction"] in (0, 1)
