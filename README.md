@@ -127,10 +127,13 @@ late-shipment-predictions-ml/
 │   ├── train_very_late_model.py  # Trains separate Random Forest classifier for very late shipments (optimized for recall)
 │   └── logger.py                 # Centralized logger for consistent logging across all modules
 │
-├── tests/                    # Pytest scripts for testing API endpoints
-│   ├── test_main.py               # Tests root landing page and /ping health check endpoint
-│   ├── test_predict_late.py       # Tests /predict_late route (1+ day delay)
-│   └── test_predict_very_late.py  # Tests /predict_very_late route (3+ day delay)
+├── tests/                             # Automated tests for validating the API
+│    ├── integretain/                    # Tests that hit real services (e.g., S3, full prediction flow)
+│    │   ├── conftest.py                   # Shared fixtures/utilities for integration tests
+│    │   ├── test_predict_late.py          # Verifies /predict_late endpoint with real artifacts (1+ day delay)
+│    │   └── test_predict_very_late.py     # Verifies /predict_very_late endpoint with real artifacts (3+ day delay)
+│    └── smoke/                         # Lightweight checks for API health
+│        └── test_main.py                 # Smoke tests for basic routes (/, /ping) to confirm service is up
 │
 ├── tuning/                  # Model tuning scripts with MLflow experiment tracking
 │   ├── tune_late_model.py       # Tunes Random Forest for predicting 1+ day late shipments (optimized for accuracy)
@@ -314,18 +317,33 @@ Note: Both endpoints use Random Forest classifiers. The late model is optimized 
 
 ## Testing the API Locally
 
-Automated integration tests are included to verify key API functionality using `pytest`:
+This project uses **pytest** for automated testing. Tests are divided into two categories:
 
-- `/` landing page returns the expected welcome message
-- `/ping` health check responds successfully
-- `/predict_late/` and `/predict_very_late/` endpoints return valid predictions
+- **Smoke tests** (in `tests/smoke/`)  
+  - Run automatically in CI on GitHub Actions.  
+  - Check that the service starts and responds at `/` and `/ping`.  
+  - These ensure deployments are not broken by basic errors.  
 
-To run the tests locally:
+- **Integration tests** (in `tests/integration/`)  
+  - Run locally (not in CI) because they require access to the S3 bucket with trained artifacts.  
+  - Verify that /predict_late/ and /predict_very_late/ return valid predictions by loading preprocessing artifacts and models from the S3 bucket.
 
-```bash
-pip install -r requirements.txt
-python run_pipeline.py   # regenerate model files
-pytest
-```
+### Running Tests Locally
 
-All tests are located in the tests/ folder.
+1. Set your working directory to the project root
+
+2. Install dependencies:  
+   ```bash
+   pip install -r requirements.txt
+ ```
+
+3. Recreate model artifacts if needed:
+    ```bash
+   python run_pipeline.py
+ ```
+
+4. Run all tests:
+    ```bash
+   pytest
+ ```
+
