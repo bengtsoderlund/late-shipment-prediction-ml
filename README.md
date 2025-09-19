@@ -128,7 +128,7 @@ late-shipment-predictions-ml/
 │   └── logger.py                 # Centralized logger for consistent logging across all modules
 │
 ├── tests/                             # Automated tests for validating the API
-│    ├── integretain/                    # Tests that hit real services (e.g., S3, full prediction flow)
+│    ├── integration/                    # Tests that hit real services (e.g., S3, full prediction flow)
 │    │   ├── conftest.py                   # Shared fixtures/utilities for integration tests
 │    │   ├── test_predict_late.py          # Verifies /predict_late endpoint with real artifacts (1+ day delay)
 │    │   └── test_predict_very_late.py     # Verifies /predict_very_late endpoint with real artifacts (3+ day delay)
@@ -335,15 +335,13 @@ This project uses **pytest** for automated testing. Tests are divided into two c
 2. Install dependencies:  
    ```bash
    pip install -r requirements.txt
- ```
-
+   ```
 3. Recreate model artifacts if needed:
-    ```bash
+   ```bash
    python run_pipeline.py
- ```
-
+   ```
 4. Run all tests:
-    ```bash
+   ```bash
    pytest
- ```
+   ```
 
