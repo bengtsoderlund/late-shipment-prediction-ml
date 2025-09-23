@@ -1,0 +1,96 @@
+name: Deploy to ECS (manual)
+
+# Events that triggers the GitHub Actions Runner
+on:
+  workflow_dispatch:
+
+# Permissions given to the runner on how to access the GitHub repo
+permissions:
+  id-token: write
+  contents: read
+
+# Give the runner "coordinates" to find things on AWS
+env:
+  AWS_REGION: eu-north-1
+  AWS_ACCOUNT_ID: 845465762767
+  ECR_REPO: late-shipment-api                  # ECR repository name
+  ECS_CLUSTER: late-shipment-cluster           # ECS cluster name (not the ARN)
+  ECS_SERVICE: late-shipment-service           # ECS service name (not the ARN)
+  DEPLOY_ROLE_ARN: arn:aws:iam::845465762767:role/GitHubActionsDeployRole # ARN of the IAM role assumed by the GitHub Actions runner to deploy (push to ECR, update ECS service)
+  
+jobs:
+  deploy: # Set job name to "deploy"
+    runs-on: ubuntu-latest # Define operating system used by runner 
+
+    steps: # Define all steps that takes place in the job named "deploy" 
+      # 1) Clone the repo (includes Dockerfile and infra/taskdef.template.json), enabled by the contenht: read permission
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2) Let runner assume your IAM "deploy role" via OIDC (temporary AWS creds for this job)
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3) Log in to ECR (so we can push the image there)
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4) Build a fresh Docker image of the app
+      #    - Tag it with the short commit SHA for traceability
+      #    - Compute the full ECR image URI once and reuse it (echo makes URI an env)
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::12}
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker build -t "$IMAGE_URI" .
+
+      # 5) Push the image to ECR (now AWS can pull it)
+      - name: Push image to ECR
+        run: docker push "$IMAGE_URI"
+
+      # 6) Render the task definition JSON (taskdef.json) by inserting the new image URI into task definition template (taskdef.template.json)
+      #    - Create folder for task definition JSON
+      #    - Create taskdef.json by replacing uri placeholder with real uri in taskdef.template.json using sed
+      - name: Render task definition
+        run: |
+          mkdir -p infra/render
+          sed "s|REPLACE_ME_IMAGE_URI|${IMAGE_URI}|g" infra/taskdef.template.json > infra/render/taskdef.json
+          echo "Rendered task definition:"
+          cat infra/render/taskdef.json
+
+      # 7) Register a new task definition revision with ECS
+      #    - Register the new task definition using taskdef.json from step 6
+      #    - Only extract the new task definition ARN using query
+      #    - Let "ARN" be that new task definition ARN and make it available in other steps as TASK_DEF_ARN using echo
+      - name: Register task definition
+        id: register
+        run: |
+          ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://infra/render/taskdef.json \
+            --query "taskDefinition.taskDefinitionArn" --output text)
+          echo "TASK_DEF_ARN=$ARN" >> $GITHUB_ENV
+          echo "Registered task def: $ARN"
+
+      # 8) Tell the ECS service to use the new task definition (rolls out new tasks)
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --service "${{ env.ECS_SERVICE }}" \
+            --task-definition "${TASK_DEF_ARN}" \
+            --force-new-deployment
+
+      # 9) Wait until the service is stable and print current deployments
+      - name: Wait for service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}"
+          aws ecs describe-services \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}" \
+            --query "services[0].deployments" --output table
