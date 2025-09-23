@@ -1,0 +1,65 @@
+{
+    "containerDefinitions": [
+        {
+            "cpu": 0,
+            "environment": [
+                {
+                    "name": "ORDINAL_KEY",
+                    "value": "preprocessing/v2025-09-04/ordinal_encoder.pkl"
+                },
+                {
+                    "name": "ARTIFACT_BUCKET",
+                    "value": "late-shipments-artifacts-bengt"
+                },
+                {
+                    "name": "VERY_LATE_MODEL_KEY",
+                    "value": "models/very_late_model/v2025-09-04/very_late_model.pkl"
+                },
+                {
+                    "name": "SCALER_KEY",
+                    "value": "preprocessing/v2025-09-04/scaler.pkl"
+                },
+                {
+                    "name": "LATE_MODEL_KEY",
+                    "value": "models/late_model/v2025-09-04/late_model.pkl"
+                },
+                {
+                    "name": "ONEHOT_KEY",
+                    "value": "preprocessing/v2025-09-04/onehot_encoder.pkl"
+                }
+            ],
+            "essential": true,
+            "image": "REPLACE_ME_IMAGE_URI",
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/late-shipment-api",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "eu-north-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "name": "late-shipment-api",
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "name": "late-shipment-api-8000-tcp",
+                    "protocol": "tcp"
+                }
+            ]
+        }
+    ],
+    "cpu": "256",
+    "executionRoleArn": "arn:aws:iam::845465762767:role/ECSTaskExecutionRole",
+    "family": "late-shipment-api",
+    "memory": "1024",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "taskRoleArn": "arn:aws:iam::845465762767:role/ECSLateShipmentTaskRole"
+}

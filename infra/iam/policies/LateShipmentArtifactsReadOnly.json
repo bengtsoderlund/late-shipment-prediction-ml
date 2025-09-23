@@ -2,16 +2,16 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "ListTheBucket",
+            "Sid": "ListBucket",
             "Effect": "Allow",
             "Action": "s3:ListBucket",
-            "Resource": "arn:aws:s3:::late-shipment-artifacts-bengt"
+            "Resource": "arn:aws:s3:::late-shipments-artifacts-bengt"
         },
         {
-            "Sid": "ReadObjectsInBucket",
+            "Sid": "ReadObjects",
             "Effect": "Allow",
             "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::late-shipment-artifacts-bengt/*"
+            "Resource": "arn:aws:s3:::late-shipments-artifacts-bengt/*"
         }
     ]
 }

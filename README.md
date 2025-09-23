@@ -93,9 +93,21 @@ late-shipment-predictions-ml/
 │   └── docs/                        # Supporting documentation
 │       └── variable_description.csv # Column descriptions and definitions
 │
-├── infra/                  # Infrastructure blueprints for AWS ECS/Fargate deployment
-│   ├── iam_policy.json        # IAM policy allowing the ECS task role to list and read objects from the S3 bucket `late-shipments-artifacts-bengt`
-│   └── task_def.json          # ECS Task Definition (family: late-shipment-api) specifying container image, roles, ports (8000), logging, CPU/memory, and Fargate runtime platform
+├── infra/                                   # Infrastructure blueprints for AWS ECS/Fargate deployment
+│   ├── diagrams/
+│   │   └── architecture.png                       # Architecture diagram of CI/CD flow: Actions → ECR → ECS/Fargate tasks → S3 artifacts + CloudWatch logs
+│   ├── iam/
+│   │   ├── policies/
+│   │   │   ├── GitHubActionsDeployPolicy.json     # Permissions for GitHubActionsDeployRole (ECR push, ECS deploy, PassRole)
+│   │   │   └── LateShipmentArtifactsReadOnly.json # Least-privilege S3 read access for ECS task role
+│   │   ├── roles/
+│   │   │   ├── ECSLateShipmentTaskRole.md         # Notes on app task role and attached S3 read-only policy
+│   │   │   ├── ECSTaskExecutionRole.md            # Notes on execution role (AmazonECSTaskExecutionRolePolicy)
+│   │   │   └── GitHubActionsDeployRole.md         # Notes on deploy role assumed by GitHub Actions (trust + policy)
+│   │   └── trust/
+│   │       └── github_actions_oidc.json           # Trust policy allowing GitHub Actions (via OIDC) to assume deploy role
+│   ├── render/                                    # Location where CI/CD renders the updated task definition before registering it
+│   └── taskdef.template.json                      # ECS Task Definition template (placeholder image, roles, ports, logging, CPU/memory)
 │
 ├── logs/
 │   └── pipeline.log         # Logs from local pipeline runs (production logs handled by CloudWatch)
