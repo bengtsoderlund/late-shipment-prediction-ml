@@ -1,4 +1,5 @@
 # Predicting Late Shipments: An End-to-End Machine Learning Project
+![CI](https://github.com/bengtsoderlund/late-shipment-prediction-ml/actions/workflows/ci.yml/badge.svg)
 
 ## Project Overview
 
@@ -18,7 +19,8 @@ The project follows modern best practices in data science and machine learning d
 - **Core Python & ML**: `Python 3.11`, `pandas`, `NumPy`, `scikit-learn`, `joblib`, `RobustScaler`, `OneHotEncoder`, `OrdinalEncoder`  
 - **API & Deployment**: `FastAPI`, `Pydantic`, `Uvicorn`, `Docker`, `pytest`  
 - **Experiment Tracking**: `MLflow`  
-- **Infrastructure (AWS)**: `Amazon ECS (Fargate)`, `Amazon ECR`, `Amazon S3`, `AWS IAM`, `Amazon CloudWatch`  
+- **Infrastructure (AWS)**: `Amazon ECS (Fargate)`, `Amazon ECR`, `Amazon S3`, `AWS IAM`, `Amazon CloudWatch`
+- **CI/CD & Automation: `GitHub Actions` (CI: tests on PRs, CD: Docker build & ECS deploy)
 - **Utilities**: `logging`, `pathlib`, `datetime`  
 
 Together, these tools support a modular, reproducible, and production-ready ML workflow.
@@ -70,13 +72,9 @@ late-shipment-predictions-ml/
 │   ├── main.py
 │   └── shipment_schema.py
 │
-├── assets/                 # Proof artifacts (screenshots) showing live deployment
-│   ├── cloudwatch_startup.png
-│   ├── swagger_docs.png
-│   ├── swagger_landing.png
-│   ├── swagger_ping.png
-│   ├── swagger_predict_late.png
-│   └── swagger_predict_very_late.png
+├── assets/                  # Proof artifacts (screenshots)
+│   ├── swagger/             # API Swagger UI (docs, ping, predict endpoints)
+│   └── ci_cd/               # CI/CD pipeline and deployment proof (Actions runs, ECS revision, CloudWatch logs)
 │
 ├── data/                            # Data storage directory
 │   ├── raw/                         # Contains raw shipment data (included)
@@ -252,27 +250,27 @@ Below are screenshots confirming the service is deployed, responding to requests
 
 - **Startup logs in CloudWatch** showing that all artifacts (scaler, encoders, models) were loaded from S3
  
-  ![CloudWatch Logs](assets/cloudwatch_startup.png)
+  ![CloudWatch Logs](assets/ci_cd/cloudwatch_startup.png)
 
 - **Landing page** served by FastAPI
 
-  ![Swagger Landing](assets/swagger_landing.png)
+  ![Swagger Landing](assets/swagger/swagger_landing.png)
 
 - **Ping endpoint** responding successfully (`{"status":"ok"}`)
  
-  ![Swagger Ping](assets/swagger_ping.png)
+  ![Swagger Ping](assets/swagger/swagger_ping.png)
 
 - **Interactive API docs** available via Swagger UI
 
-  ![Swagger Docs](assets/swagger_docs.png)
+  ![Swagger Docs](assets/swagger/swagger_docs.png)
 
 - **Prediction endpoint** returning a valid response (`late_prediction: 1`)
  
-  ![Swagger Predict Late](assets/swagger_predict_late.png)
+  ![Swagger Predict Late](assets/swagger/swagger_predict_late.png)
 
 - **Very Late prediction endpoint** returning a valid response (`very_late_prediction: 0/1`)
 
-  ![Swagger Predict Very Late](assets/swagger_predict_very_late.png)
+  ![Swagger Predict Very Late](assets/swagger/swagger_predict_very_late.png)
 
 
 ## Using the Deployed API
@@ -357,3 +355,41 @@ This project uses **pytest** for automated testing. Tests are divided into two c
    pytest
    ```
 
+## CI/CD
+
+This project uses GitHub Actions for both Continuous Integration (CI) and Continuous Deployment (CD):
+
+- **Continuous Integration (CI)**  
+  Every pull request and commit to `main` automatically triggers a workflow that installs dependencies and runs tests.  
+  - Ensures the codebase remains stable.  
+  - Provides immediate feedback when something breaks.  
+  - ![CI](https://github.com/bengtsoderlund/late-shipment-prediction-ml/actions/workflows/ci.yml/badge.svg)
+
+- **Continuous Deployment (CD)**  
+  A separate workflow builds the Docker image, pushes it to Amazon ECR, and updates the ECS Fargate service.  
+  - Uses OpenID Connect (OIDC) for secure authorization (no stored AWS keys).  
+  - Registers a new ECS task definition on each deploy.  
+  - Updates the ECS service to point to the new revision.  
+
+### Proof of Automation
+The following links and screenshots confirm that the CI/CD pipeline is active and working end-to-end:
+
+- [CI Workflow Runs](https://github.com/bengtsoderlund/late-shipment-prediction-ml/actions/workflows/ci.yml)  
+- [Deploy Workflow Runs](https://github.com/bengtsoderlund/late-shipment-prediction-ml/actions/workflows/deploy.yml)
+
+
+- **CI run history** in GitHub Actions  
+  Showing multiple commits triggering automated test runs. The first run failed, while later runs passed, demonstrating CI catching and verifying fixes.  
+
+  ![CI Run](assets/ci_cd/ci_run.png)
+
+- **Deploy workflow success** in GitHub Actions  
+  A manual deploy run that built the Docker image, pushed it to Amazon ECR, and updated the ECS service.  
+
+  ![Deploy Success](assets/ci_cd/deploy_success.png)
+
+- **ECS service revision history** in the AWS Console  
+  Confirming that a new task definition revision (`:14`) was registered on the same date as the deploy run.
+The service was later scaled to 0 tasks to save costs, but the revision history proves the deployment succeeded.
+
+  ![ECS Revision](assets/ci_cd/ecs_revision.png)
