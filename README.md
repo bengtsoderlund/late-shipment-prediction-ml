@@ -20,7 +20,7 @@ The project follows modern best practices in data science and machine learning d
 - **API & Deployment**: `FastAPI`, `Pydantic`, `Uvicorn`, `Docker`, `pytest`  
 - **Experiment Tracking**: `MLflow`  
 - **Infrastructure (AWS)**: `Amazon ECS (Fargate)`, `Amazon ECR`, `Amazon S3`, `AWS IAM`, `Amazon CloudWatch`
-- **CI/CD & Automation: `GitHub Actions` (CI: tests on PRs, CD: Docker build & ECS deploy)
+- **CI/CD & Automation**: `GitHub Actions` (CI: tests on PRs, CD: Docker build & ECS deploy)
 - **Utilities**: `logging`, `pathlib`, `datetime`  
 
 Together, these tools support a modular, reproducible, and production-ready ML workflow.
@@ -74,6 +74,7 @@ late-shipment-predictions-ml/
 │
 ├── assets/                  # Proof artifacts (screenshots)
 │   ├── swagger/             # API Swagger UI (docs, ping, predict endpoints)
+│   ├── orchestration/       # Prefect orchestration proof (MLflow runs, S3 versioning, retrain flow logs)
 │   └── ci_cd/               # CI/CD pipeline and deployment proof (Actions runs, ECS revision, CloudWatch logs)
 │
 ├── data/                            # Data storage directory
@@ -324,6 +325,63 @@ To try out the deployed FastAPI app on AWS:
    - For /predict_very_late/ → 0 = Not very late (less than 3 days), 1 = Very late (3 or more days)
 
 Note: Both endpoints use Random Forest classifiers. The late model is optimized for accuracy, while the very late model is optimized for recall to flag high-risk shipments.
+
+## Orchestrated Retraining (Prefect + MLflow)
+Once the initial model is deployed, maintaining performance over time becomes just as important as the original training.  
+To ensure that new data or shifting shipment patterns can be incorporated seamlessly, the project includes a dedicated **retraining pipeline** (`retrain_pipeline.py`).
+
+This pipeline is fully **orchestrated with Prefect** and tracked with **MLflow** for end-to-end experiment management, versioning, and artifact tracking.  
+It automates every stage of the model lifecycle — from data ingestion to feature engineering, model training, and versioned deployment of new artifacts to Amazon S3.
+
+Each retraining run:
+1. Loads and cleans raw shipment data  
+2. Engineers predictive features  
+3. Preprocesses inputs and saves encoders/scalers  
+4. Trains and evaluates the Late and Very Late Random Forest models  
+5. Logs parameters, metrics, tags, and model signatures in **MLflow**  
+6. Uploads versioned model artifacts and preprocessing files to **Amazon S3**
+
+**MLflow Integration**
+- Each model training step creates a new experiment run in MLflow with metrics (accuracy or recall), parameters, and model signatures. 
+- Model artifacts and metadata are stored locally under `mlruns/` and can be visualized with:
+   ```bash
+   mlflow ui --backend-store-uri file:///path/to/project/mlruns
+   ```
+- Hyperparameter tuning is also integrated with MLflow, ensuring all experiments (training and tuning) are versioned and reproducible.
+
+### Artifact Versioning
+- Artifacts are uploaded to S3 using a versioned structure as follows:
+  ```bash
+s3://late-shipments-artifacts-bengt/models/late_model/vYYYY-MM-DD/
+s3://late-shipments-artifacts-bengt/preprocessing/vYYYY-MM-DD/
+  ```
+
+### Scheduling (Conceptual)
+- The retrain pipeline can be scheduled via Windows Task Scheduler or Prefect Cloud for automated weekly retraining.
+- For this project, retraining is executed manually to keep transparent and reproducible.
+
+### Proof of Orchestrated Retraining
+Below are screenshots demonstrating the retraining orchestration and tracking setup:
+
+- **MLflow Experiment Tracking:**  
+  ![MLflow runs](assets/orchestration/mlflow_runs.png)  
+  The MLflow UI shows all four experiments created during the project — two for model tuning (*Late* and *Very Late Shipment Tuning*) and two for orchestrated retraining (*Late* and *Very Late Shipment Training*).  
+  Each run logs model parameters, evaluation metrics, duration, and serialized artifacts.  
+  This provides full experiment transparency and version control across both tuning and production retraining stages.  
+  *(Accessed locally via [http://127.0.0.1:5000](http://127.0.0.1:5000); MLflow files are generated when the tuning or retraining pipelines are executed and are not included in the repository.)*
+
+- **Versioned Artifacts in Amazon S3:**  
+  ![S3 versioned folders overview](assets/orchestration/s3_versions_overview.png)  
+  ![S3 versioned folders detail](assets/orchestration/s3_versions_detail.png)  
+  The screenshots above show the automatically versioned structure in the S3 bucket (`late-shipments-artifacts-bengt`). Each retraining run creates new date-stamped subfolders under `models/` and `preprocessing/` (e.g., `v2025-09-04/`, `v2025-10-06/`, `v2025-10-07/`), ensuring artifact version control and reproducibility of all model iterations.  
+
+- **Prefect Orchestrated Retraining Run:**  
+  ![Prefect retrain start](assets/orchestration/prefect_retrain_start.png)  
+  ![Prefect retrain end](assets/orchestration/prefect_retrain_end.png)  
+  The console output from a full Prefect flow execution shows the retraining process from start to finish.  
+  The first image captures flow initialization and early steps such as data loading and preprocessing.  
+  The second shows the final stages, including S3 uploads and the confirmation  
+  **“Flow run ... Finished in state Completed()”**, verifying that all orchestration, MLflow tracking, and artifact versioning executed successfully.  
 
 ## Testing the API Locally
 
