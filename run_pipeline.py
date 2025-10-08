@@ -35,6 +35,19 @@ very_late_model_file = base_dir / "models" / "very_late_model.pkl"
 scaler_file = base_dir / "models" / "scaler.pkl"
 onehot_encoder_file = base_dir / "models" / "onehot_encoder.pkl"
 ordinal_encoder_file = base_dir / "models" / "ordinal_encoder.pkl"
+mlruns_path = base_dir / "mlruns"
+
+# Create all local directories that must exist
+required_dirs = [
+    raw_data_file.parent,        # "data/raw"
+    unprocessed_data_dir,
+    preprocessed_data_dir,
+    late_model_file.parent,      # "models"
+    mlruns_path,
+]
+
+for d in required_dirs:
+    d.mkdir(parents=True, exist_ok=True)
 
 
 def main():
@@ -95,7 +108,8 @@ def main():
             y_train=processed_data["y_late_train"],
             X_test=processed_data["X_test"],
             y_test=processed_data["y_late_test"],
-            model_file=late_model_file
+            model_file=late_model_file,
+            mlruns_path=mlruns_path
         )
         
         # ─────────────────────────────────────────────
@@ -107,7 +121,8 @@ def main():
             y_train=processed_data["y_very_late_train"],
             X_test=processed_data["X_test"],
             y_test=processed_data["y_very_late_test"],
-            model_file=very_late_model_file
+            model_file=very_late_model_file,
+            mlruns_path=mlruns_path
         )
         
         duration = time.time() - start
