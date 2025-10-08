@@ -351,9 +351,9 @@ Each retraining run:
 
 ### Artifact Versioning
 - Artifacts are uploaded to S3 using a versioned structure as follows:
-  ```bash
-s3://late-shipments-artifacts-bengt/models/late_model/vYYYY-MM-DD/
-s3://late-shipments-artifacts-bengt/preprocessing/vYYYY-MM-DD/
+  ```
+  s3://late-shipments-artifacts-bengt/models/late_model/vYYYY-MM-DD/
+  s3://late-shipments-artifacts-bengt/preprocessing/vYYYY-MM-DD/
   ```
 
 ### Scheduling (Conceptual)
