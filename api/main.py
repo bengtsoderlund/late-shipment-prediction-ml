@@ -38,7 +38,7 @@ app = FastAPI(
 # Retrieve bucket location and artifact names from environment variables
 # (only enforced in non-test mode)
 # ─────────────────────────────────────────────
-BUCKET = os.environ.get("ARTIFACT_BUCKET")
+BUCKET = os.environ.get("S3_BUCKET")
 SCALER_KEY = os.environ.get("SCALER_KEY")
 ONEHOT_KEY = os.environ.get("ONEHOT_KEY")
 ORDINAL_KEY = os.environ.get("ORDINAL_KEY")

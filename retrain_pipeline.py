@@ -3,15 +3,18 @@ retrain_pipeline.py
 
 Orchestrated retraining pipeline for late shipment prediction models.
 
-This script defines a Prefect flow that automates the full lifecycle:
+This Prefect flow automates the full lifecycle:
 1. Load raw shipment data
 2. Clean and validate the data
 3. Engineer predictive features
-4. Preprocess features (train-test split, save encoder and scaler)
-5-6. Train and saves the "late" and "very late" Random Forest models
-7. Uploads preprocess artifacts and models to S3
-8. Log results to MLflow for experiment tracking
-9. Send notification on success or failure
+4. Preprocess features (train–test split, save encoder and scaler)
+5–6. Train and save the "late" and "very late" Random Forest models
+7. (Optional) Upload versioned artifacts to S3 and promote them to the stable 'latest/' keys
+
+Uploads and promotions occur only if UPLOAD_TO_S3=true in the environment.
+When disabled, the pipeline still completes locally without requiring AWS access.
+
+Logs metrics to MLflow and sends a Prefect notification on success or failure.
 """
 
 # ─────────────────────────────────────────────
@@ -84,6 +87,7 @@ from src.tasks import (
     t_train_very_late,
     t_upload_file,
     t_notify,
+    t_overwrite_latest,
 )
 
 
@@ -104,10 +108,15 @@ def retrain_pipeline(bucket: str | None = None, region: str | None = None):
     region = region or os.getenv("AWS_REGION")
     logger.info(f"Config → bucket={bucket}, region={region}")
     
-    if not bucket:
-        raise ValueError("S3_BUCKET not configured (set env or pass as param).")
-    if not region:
-        raise ValueError("AWS_REGION not configured (set env or pass as param).")
+    # Decide whether to upload to S3 (default false)
+    upload_to_s3 = os.getenv("UPLOAD_TO_S3", "false").lower() == "true"
+    logger.info(f"UPLOAD_TO_S3 = {upload_to_s3}")
+    
+    if upload_to_s3:
+        if not bucket:
+            raise ValueError("S3_BUCKET not configured (set env or pass as param).")
+        if not region:
+            raise ValueError("AWS_REGION not configured (set env or pass as param).")
 
     # Ensure local directories exist
     late_model_file.parent.mkdir(parents=True, exist_ok=True)
@@ -164,57 +173,103 @@ def retrain_pipeline(bucket: str | None = None, region: str | None = None):
         mlruns_path
     ).result()
 
-    # ─────────────────────────────────────────────
-    # 7) Upload artifacts to S3
-    # ─────────────────────────────────────────────
-    # Each run creates a new versioned folder in S3, e.g.:
-    #   models/late_model/v2025-10-01/late_model.pkl
-    #   preprocessing/v2025-10-01/scaler.pkl
-    logger.info("- Step 7: Upload artifacts to S3")
-    
-    v = datetime.date.today().isoformat()  # e.g. '2025-09-30'
-    
-    logger.info(f"Uploading artifacts to S3 under version v{v}")
-    
-    # Upload models (individual upload)
-    u1 = t_upload_file.submit(
-        local_path=late_model_path,
-        bucket=bucket,
-        key=f"{S3_MODELS_BASE}/late_model/v{v}/late_model.pkl",
-        region=region,
-    )
-    u2 = t_upload_file.submit(
-        local_path=very_late_model_path,
-        bucket=bucket,
-        key=f"{S3_MODELS_BASE}/very_late_model/v{v}/very_late_model.pkl",
-        region=region,
-    )
 
-    # Upload preprocessing artifacts (individual upload)
-    u3 = t_upload_file.submit(
-        local_path=scaler_file,
-        bucket=bucket,
-        key=f"{S3_PREPROC_BASE}/v{v}/scaler.pkl",
-        region=region,
-    )
-    u4 = t_upload_file.submit(
-        local_path=onehot_encoder_file,
-        bucket=bucket,
-        key=f"{S3_PREPROC_BASE}/v{v}/onehot_encoder.pkl",
-        region=region,
-    )
-    u5 = t_upload_file.submit(
-        local_path=ordinal_encoder_file,
-        bucket=bucket,
-        key=f"{S3_PREPROC_BASE}/v{v}/ordinal_encoder.pkl",
-        region=region,
-    )
-    
-    # block until all uploads complete
-    for u in (u1, u2, u3, u4, u5):
-        u.result()
+    # ─────────────────────────────────────────────
+    # STEP 7. Upload versioned artifacts → then promote to latest (optional)
+    # ─────────────────────────────────────────────
+    if upload_to_s3:
+        logger.info("- Step 7: Uploading artifacts to S3")
+        version_tag = datetime.datetime.now().strftime("v%Y-%m-%d_%H-%M")
 
-    t_notify.submit(f"Retrain {v}: models and preprocessing artifacts uploaded.")
+        # Each run creates a new versioned folder in S3, e.g.:
+        #   models/late_model/v2025-10-01/late_model.pkl
+        #   preprocessing/v2025-10-01/scaler.pkl
+        #
+        # After uploading, each artifact is also copied to its stable 'latest/' path.
+        # This overwrites the previous files so the ECS app can always load the newest
+        # model and preprocessing artifacts from:
+        #   models/late_model/latest/late_model.pkl
+        #   preprocessing/latest/scaler.pkl
+
+        # late_model
+        u1 = t_upload_file.submit(
+            local_path=late_model_file,
+            bucket=bucket,
+            key=f"{S3_MODELS_BASE}/late_model/{version_tag}/late_model.pkl",
+            region=region,
+        )
+        u1.result()
+        t_overwrite_latest.submit(
+            versioned_key=f"{S3_MODELS_BASE}/late_model/{version_tag}/late_model.pkl",
+            latest_key=f"{S3_MODELS_BASE}/late_model/latest/late_model.pkl",
+            bucket=bucket,
+            region=region,
+        ).result()
+
+        # very_late_model
+        u2 = t_upload_file.submit(
+            local_path=very_late_model_file,
+            bucket=bucket,
+            key=f"{S3_MODELS_BASE}/very_late_model/{version_tag}/very_late_model.pkl",
+            region=region,
+        )
+        u2.result()
+        t_overwrite_latest.submit(
+            versioned_key=f"{S3_MODELS_BASE}/very_late_model/{version_tag}/very_late_model.pkl",
+            latest_key=f"{S3_MODELS_BASE}/very_late_model/latest/very_late_model.pkl",
+            bucket=bucket,
+            region=region,
+        ).result()
+
+        # scaler
+        u3 = t_upload_file.submit(
+            local_path=scaler_file,
+            bucket=bucket,
+            key=f"{S3_PREPROC_BASE}/{version_tag}/scaler.pkl",
+            region=region,
+        )
+        u3.result()
+        t_overwrite_latest.submit(
+            versioned_key=f"{S3_PREPROC_BASE}/{version_tag}/scaler.pkl",
+            latest_key=f"{S3_PREPROC_BASE}/latest/scaler.pkl",
+            bucket=bucket,
+            region=region,
+        ).result()
+
+        # onehot_encoder
+        u4 = t_upload_file.submit(
+            local_path=onehot_encoder_file,
+            bucket=bucket,
+            key=f"{S3_PREPROC_BASE}/{version_tag}/onehot_encoder.pkl",
+            region=region,
+        )
+        u4.result()
+        t_overwrite_latest.submit(
+            versioned_key=f"{S3_PREPROC_BASE}/{version_tag}/onehot_encoder.pkl",
+            latest_key=f"{S3_PREPROC_BASE}/latest/onehot_encoder.pkl",
+            bucket=bucket,
+            region=region,
+        ).result()
+
+        # ordinal_encoder
+        u5 = t_upload_file.submit(
+            local_path=ordinal_encoder_file,
+            bucket=bucket,
+            key=f"{S3_PREPROC_BASE}/{version_tag}/ordinal_encoder.pkl",
+            region=region,
+        )
+        u5.result()
+        t_overwrite_latest.submit(
+            versioned_key=f"{S3_PREPROC_BASE}/{version_tag}/ordinal_encoder.pkl",
+            latest_key=f"{S3_PREPROC_BASE}/latest/ordinal_encoder.pkl",
+            bucket=bucket,
+            region=region,
+        ).result()
+
+        t_notify.submit(f"Retrain {version_tag}: uploaded and promoted artifacts to latest/ pointers.")
+    else:
+        logger.info("UPLOAD_TO_S3 is false → skipping S3 uploads and promotions.")
+
 
 if __name__ == "__main__":
     retrain_pipeline()
