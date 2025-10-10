@@ -68,6 +68,13 @@ The repository follows a modular, production-ready structure designed for clarit
 ```text
 late-shipment-predictions-ml/
 │
+├── README.md                # Project overview, setup instructions, and deployment details
+├── requirements.txt         # Python dependencies for local and container environments
+├── env.example              # Example environment file (set UPLOAD_TO_S3=false for local retraining)
+├── Dockerfile               # Container definition for FastAPI app (used in ECS deployment)
+├── run_pipeline.py          # Local execution script for the full ML workflow: data loading, feature engineering, training, and evaluation
+├── retrain_pipeline.py      # Prefect-orchestrated retraining pipeline (data prep → model updates → optional S3 uploads)
+│
 ├── api/                     # FastAPI application and endpoint logic
 │   ├── main.py
 │   └── shipment_schema.py
@@ -146,14 +153,9 @@ late-shipment-predictions-ml/
 │    └── smoke/                         # Lightweight checks for API health
 │        └── test_main.py                 # Smoke tests for basic routes (/, /ping) to confirm service is up
 │
-├── tuning/                  # Model tuning scripts with MLflow experiment tracking
-│   ├── tune_late_model.py       # Tunes Random Forest for predicting 1+ day late shipments (optimized for accuracy)
-│   └── tune_very_late_model.py  # Tunes Random Forest for 3+ day late shipments (optimized for recall)
-│
-├── run_pipeline.py          # Main pipeline script to execute the ML workflow
-├── requirements.txt         # List of dependencies
-├── Dockerfile               # Used to containerize and deploy the FastAPI app
-└── README.md
+└── tuning/                  # Model tuning scripts with MLflow experiment tracking
+    ├── tune_late_model.py       # Tunes Random Forest for predicting 1+ day late shipments (optimized for accuracy)
+    └── tune_very_late_model.py  # Tunes Random Forest for 3+ day late shipments (optimized for recall)
 ```
 
 ## Installation and Running the Pipeline
@@ -181,10 +183,34 @@ Key pipeline features:
 
 **Note:**
 Running the pipeline will generate two model files:
-- models/very_late_model.pkl
-- models/late_model.pkl
+- `models/very_late_model.pkl`
+- `models/late_model.pkl`
 
-These models are used by the FastAPI app for inference via the /predict_very_late and /predict_late endpoints.
+These models are used by the FastAPI app for inference via the `/predict_very_late` and `/predict_late` endpoints.
+
+## Configuration
+
+### Environment Variables (minimal setup)
+This project uses environment variables for configuration, but setting them up is **only necessary if you plan to run the retraining pipeline**.  
+The retraining pipeline is used when updating the project with new raw shipment data and optionally uploading new model artifacts to Amazon S3.
+
+If you want to run it locally, follow these steps:
+
+1. Copy the provided example file to create your own `.env`:
+   ```bash
+   cp env.example .env
+   ```
+2. Open the new `.env` file and make sure this line is set:
+   ```bash
+   UPLOAD_TO_S3=false
+   ```
+   
+   This setting is important because the pipeline includes optional logic to upload newly trained models and preprocessing artifacts to S3.
+   Setting `UPLOAD_TO_S3=false` ensures that your local run saves all outputs only to your local folders (`models/` and `data/`) and does not attempt any AWS uploads.
+
+   You do not need to configure any AWS credentials or S3 settings to run the project locally.
+   Those variables are only required if you later deploy or test the pipeline in the cloud with `UPLOAD_TO_S3=true`.
+
 
 ## Deployment
 
@@ -350,11 +376,20 @@ Each retraining run:
 - Hyperparameter tuning is also integrated with MLflow, ensuring all experiments (training and tuning) are versioned and reproducible.
 
 ### Artifact Versioning
-- Artifacts are uploaded to S3 using a versioned structure as follows:
+Each retraining run produces versioned artifacts stored in Amazon S3 with a unique timestamp:
   ```
-  s3://late-shipments-artifacts-bengt/models/late_model/vYYYY-MM-DD/
-  s3://late-shipments-artifacts-bengt/preprocessing/vYYYY-MM-DD/
+  s3://late-shipments-artifacts-bengt/models/late_model/vYYYY-MM-DD_HH-MM/
+  s3://late-shipments-artifacts-bengt/preprocessing/vYYYY-MM-DD_HH-MM/
   ```
+After all versioned uploads complete, the pipeline automatically promotes the newest artifacts to a stable `latest/` location by copying and overwriting them:
+  ```
+  s3://late-shipments-artifacts-bengt/models/late_model/latest/late_model.pkl
+  s3://late-shipments-artifacts-bengt/preprocessing/latest/scaler.pkl
+  s3://late-shipments-artifacts-bengt/preprocessing/latest/onehot_encoder.pkl
+  s3://late-shipments-artifacts-bengt/preprocessing/latest/ordinal_encoder.pkl
+  ```
+This ensures the FastAPI app on ECS always loads the most recent production-ready artifacts without needing to manually adjust S3 paths or redeploy logic.
+Older versions remain preserved for traceability and rollback.
 
 ### Scheduling (Conceptual)
 - The retrain pipeline can be scheduled via Windows Task Scheduler or Prefect Cloud for automated weekly retraining.
@@ -372,8 +407,12 @@ Below are screenshots demonstrating the retraining orchestration and tracking se
 
 - **Versioned Artifacts in Amazon S3:**  
   ![S3 versioned folders overview](assets/orchestration/s3_versions_overview.png)  
-  ![S3 versioned folders detail](assets/orchestration/s3_versions_detail.png)  
-  The screenshots above show the automatically versioned structure in the S3 bucket (`late-shipments-artifacts-bengt`). Each retraining run creates new date-stamped subfolders under `models/` and `preprocessing/` (e.g., `v2025-09-04/`, `v2025-10-06/`, `v2025-10-07/`), ensuring artifact version control and reproducibility of all model iterations.  
+  ![S3 versioned folders detail](assets/orchestration/s3_versions_detail.png)
+  
+  The screenshots above show the automatically managed structure in the S3 bucket (`late-shipments-artifacts-bengt`).
+  Each retraining run creates new date-stamped subfolders under models/ and preprocessing/ (e.g. `v2025-10-09_17-17/`) to preserve version history.
+  After upload, the pipeline automatically promotes the newest artifacts to a stable `latest/` location (e.g. `models/late_model/latest/late_model.pkl`) used by the deployed API.
+  This ensures ECS always loads the most recent production-ready models while older versions remain preserved for traceability and rollback.
 
 - **Prefect Orchestrated Retraining Run:**  
   ![Prefect retrain start](assets/orchestration/prefect_retrain_start.png)  
